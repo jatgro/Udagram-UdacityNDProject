@@ -6,5 +6,9 @@
 	{
 		"ParameterKey": "VpcCIDR",
 		"ParameterValue": "10.0.0.0/16"
-    }
+    },
+	{
+		"ParameterKey": "awsManagedPolicyForS3BucketFullAccess",
+		"ParameterValue": "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+	}
 ]

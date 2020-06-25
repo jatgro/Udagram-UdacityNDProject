@@ -6,6 +6,10 @@ Parameters:
     EnvironmentName:
         Description: An Environment name which will be used to access the output of the network infra stack
         Type: String
+
+    awsManagedPolicyForS3BucketFullAccess:
+    Type: String
+    Description: awsExampleIAMManagedPolicyARNOne
         
 Resources:
   LBSecGroup:
@@ -57,8 +61,10 @@ Resources:
               Service: ec2.amazonaws.com
             Action: sts:AssumeRole
       Path: /
+      ManagedPolicyArns:
+        - !Ref awsManagedPolicyForS3BucketFullAccess
 
-  RootInstanceProfile:
+  RootInstanceIAMProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Path: /
@@ -81,7 +87,7 @@ Resources:
           aws s3 cp s3://udacity-demo-1/udacity.zip .
           unzip -o udacity.
       ImageId: ami-003634241a8fcdec0
-      IamInstanceProfile: !Ref IAMProfile
+      IamInstanceProfile: !Ref RootInstanceIAMProfile
       SecurityGroups: 
         - Ref: WebServerSecurityGroup
       InstanceType: 
@@ -90,5 +96,5 @@ Resources:
         - DeviceName: /dev/sdk
           Ebs: 
             VolumeSize: 10
-            DeleteOnTermination: "false"
+            DeleteOnTermination: "true"
 
