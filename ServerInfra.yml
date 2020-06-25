@@ -1,0 +1,94 @@
+Description: >
+    Jatin Grover
+    Deploys the Udagram (Udaccity ND Project)  servers and SecurityGroup
+
+Parameters:
+    EnvironmentName:
+        Description: An Environment name which will be used to access the output of the network infra stack
+        Type: String
+        
+Resources:
+  LBSecGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow HTTP port 80 to load balancer of the infra
+      VpcId:
+        Fn::ImportValue: !Sub "VPCID-${EnvironmentName}" 
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+
+  WebServerSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties: 
+          GroupDescription: Allow http to  hosts and SSH from local only 
+          VpcId:
+            Fn::ImportValue: !Sub "VPCID-${EnvironmentName}"
+          SecurityGroupIngress: 
+          - IpProtocol: tcp # Ingress: HTTP access
+            FromPort: 80
+            ToPort: 80
+            CidrIp: 0.0.0.0/0
+          - IpProtocol: tcp  # Ingress: SSH access
+            FromPort: 22
+            ToPort: 22
+            CidrIp: 0.0.0.0/0
+          SecurityGroupEgress: 
+          - IpProtocol: tcp # Egress: open ports to access the internet
+            FromPort: 0
+            ToPort: 65535
+            CidrIp: 0.0.0.0/0
+
+  S3DataAccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+
+  RootInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref S3DataAccessRole
+
+  LaunchConfigForWebServer: 
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties: 
+      
+      ImageId: 
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          apt-get update -y
+          apt-get install unzip awscli -y
+          apt-get install apache2 -y
+          systemctl start apache2.service
+          cd /var/www/html
+          aws s3 cp s3://udacity-demo-1/udacity.zip .
+          unzip -o udacity.
+      ImageId: ami-003634241a8fcdec0
+      IamInstanceProfile: !Ref IAMProfile
+      SecurityGroups: 
+        - Ref: WebServerSecurityGroup
+      InstanceType: 
+        Ref: t3.medium # to provide 4 gigs of RAM
+      BlockDeviceMappings: 
+        - DeviceName: /dev/sdk
+          Ebs: 
+            VolumeSize: 10
+            DeleteOnTermination: "false"
+
