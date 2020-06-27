@@ -12,7 +12,7 @@ Parameters:
     Description: awsExampleIAMManagedPolicyARNOne
         
 Resources:
-  LBSecGroup:
+  LoadBalancerSecGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow HTTP port 80 to load balancer of the infra
@@ -28,6 +28,33 @@ Resources:
         FromPort: 80
         ToPort: 80
         CidrIp: 0.0.0.0/0
+  
+  LoadBalancer: #Application Load balancer
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Subnets:
+      - Fn::ImportValue: !Sub "${EnvironmentName}-PUB1-SN"
+      - Fn::ImportValue: !Sub "${EnvironmentName}-PUB2-SN"
+      SecurityGroups:
+      - Ref: LoadBalancerSecGroup
+
+  #adding a listner for the load baalancer to check for connection requests
+
+  LoadBalancerlistener:
+   Type: "AWS::ElasticLoadBalancingV2::Listener"
+   Properties:
+     DefaultActions:
+       - Type: "redirect"
+         RedirectConfig:
+           Protocol: "HTTPS"
+           Port: "443"
+           Host: "#{host}"
+           Path: "/#{path}"
+           Query: "#{query}"
+           StatusCode: "HTTP_301"
+     LoadBalancerArn: !Ref myLoadBalancer
+     Port: 80
+     Protocol: "HTTP"
 
   WebServerSecurityGroup:
       Type: AWS::EC2::SecurityGroup
