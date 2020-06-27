@@ -29,6 +29,20 @@ Resources:
         ToPort: 80
         CidrIp: 0.0.0.0/0
   
+  ApplicationTargetGroup:
+        Type: AWS::ElasticLoadBalancingV2::TargetGroup
+        Properties:
+          HealthCheckIntervalSeconds: 90
+          HealthCheckPath: /
+          HealthCheckProtocol: HTTP
+          HealthCheckTimeoutSeconds: 30
+          HealthyThresholdCount: 2
+          Port: 80
+          Protocol: HTTP
+          UnhealthyThresholdCount: 5
+          VpcId:
+            Fn::ImportValue: !Sub VPCID-${EnvironmentName}
+  
   LoadBalancer: #Application Load balancer
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
@@ -44,17 +58,23 @@ Resources:
    Type: "AWS::ElasticLoadBalancingV2::Listener"
    Properties:
      DefaultActions:
-       - Type: "redirect"
-         RedirectConfig:
-           Protocol: "HTTPS"
-           Port: "443"
-           Host: "#{host}"
-           Path: "/#{path}"
-           Query: "#{query}"
-           StatusCode: "HTTP_301"
-     LoadBalancerArn: !Ref myLoadBalancer
+      - Type: "forward"
+     LoadBalancerArn: !Ref LoadBalancer
      Port: 80
      Protocol: "HTTP"
+
+  #Custom rule for the listener
+  CustomListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties: 
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref 'ApplicationTargetGroup'
+      Conditions:
+        - Field: path-pattern
+          Values: [/]
+      ListenerArn: !Ref 'LoadBalancerlistener'
+      Priority: 50000 #Highest Priority
 
   WebServerSecurityGroup:
       Type: AWS::EC2::SecurityGroup
@@ -125,3 +145,9 @@ Resources:
             VolumeSize: 10
             DeleteOnTermination: "true"
 
+Outputs:
+  LoadBalancerDNS:
+    Description: DNS for Load Balancer in order to access the applicaation servers
+    Value: !Join [ "", [ "http://", !GetAtt LoadBalancer.DNSName ] ]
+    Export:
+      Name: !Sub "${EnvironmentName}-LB-DNS"
