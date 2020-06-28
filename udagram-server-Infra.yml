@@ -8,8 +8,12 @@ Parameters:
         Type: String
 
     awsManagedPolicyForS3BucketFullAccess:
-    Type: String
-    Description: awsExampleIAMManagedPolicyARNOne
+        Type: String
+        Description: awsExampleIAMManagedPolicyARNOne
+    
+    UdagramProjectS3Bucket:
+        Description: S3 bucket name
+        Type: String
         
 Resources:
   LoadBalancerSecGroup:
@@ -35,7 +39,7 @@ Resources:
           HealthCheckIntervalSeconds: 90
           HealthCheckPath: /
           HealthCheckProtocol: HTTP
-          HealthCheckTimeoutSeconds: 30
+          HealthCheckTimeoutSeconds: 45
           HealthyThresholdCount: 2
           Port: 80
           Protocol: HTTP
@@ -59,6 +63,8 @@ Resources:
    Properties:
      DefaultActions:
       - Type: "forward"
+        TargetGroupArn:
+          Ref: ApplicationTargetGroup
      LoadBalancerArn: !Ref LoadBalancer
      Port: 80
      Protocol: "HTTP"
@@ -126,24 +132,39 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          apt-get update -y
-          apt-get install unzip awscli -y
-          apt-get install apache2 -y
+          yum update -y
+          yum install unzip awscli -y
+          yum install apache2 -y
           systemctl start apache2.service
           cd /var/www/html
-          aws s3 cp s3://udacity-demo-1/udacity.zip .
+          aws s3 sync ${UdagramProjectS3Bucket} .
           unzip -o udacity.
       ImageId: ami-003634241a8fcdec0
       IamInstanceProfile: !Ref RootInstanceIAMProfile
       SecurityGroups: 
         - Ref: WebServerSecurityGroup
-      InstanceType: 
-        Ref: t3.medium # to provide 4 gigs of RAM
+      InstanceType: "t3.medium" # to provide 4 gigs of RAM
       BlockDeviceMappings: 
         - DeviceName: /dev/sdk
           Ebs: 
             VolumeSize: 10
             DeleteOnTermination: "true"
+      
+ApplicationAutoScalingGroup:
+  Type: AWS::AutoScaling::AutoScalingGroup
+  Properties: 
+    AutoScalingGroupName: "Application AutoScaling Group"
+    AvailabilityZones: 
+      - !GetAZs
+    HealthCheckGracePeriod: 500
+    LaunchConfigurationName: !Ref LaunchConfigForWebServer
+    MaxSize: '8'
+    MinSize: '4'
+    TargetGroupARNs: 
+      Ref: ApplicationTargetGroup
+    VPCZoneIdentifier: 
+      - Fn::ImportValue: !Sub "${EnvironmentName}-PRIV-NETS"
+
 
 Outputs:
   LoadBalancerDNS:
