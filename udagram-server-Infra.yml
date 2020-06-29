@@ -153,15 +153,13 @@ Resources:
 ApplicationAutoScalingGroup:
   Type: AWS::AutoScaling::AutoScalingGroup
   Properties: 
-    AutoScalingGroupName: "Application AutoScaling Group"
-    AvailabilityZones: 
-      - !GetAZs
+    AvailabilityZones: !GetAZs
     HealthCheckGracePeriod: 500
-    LaunchConfigurationName: !Ref LaunchConfigForWebServer
-    MaxSize: '8'
-    MinSize: '4'
+    LaunchConfigurationName: !Ref "LaunchConfigForWebServer"
+    MaxSize: 8
+    MinSize: 4
     TargetGroupARNs: 
-      Ref: ApplicationTargetGroup
+      Ref: "ApplicationTargetGroup"
     VPCZoneIdentifier: 
       - Fn::ImportValue: !Sub "${EnvironmentName}-PRIV-NETS"
 
