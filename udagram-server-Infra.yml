@@ -126,9 +126,7 @@ Resources:
 
   LaunchConfigForWebServer: 
     Type: AWS::AutoScaling::LaunchConfiguration
-    Properties: 
-      
-      ImageId: 
+    Properties:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
@@ -150,20 +148,18 @@ Resources:
             VolumeSize: 10
             DeleteOnTermination: "true"
       
-ApplicationAutoScalingGroup:
-  Type: AWS::AutoScaling::AutoScalingGroup
-  Properties: 
-    AvailabilityZones: !GetAZs
-    HealthCheckGracePeriod: 500
-    LaunchConfigurationName: !Ref "LaunchConfigForWebServer"
-    MaxSize: 8
-    MinSize: 4
-    TargetGroupARNs: 
-      Ref: "ApplicationTargetGroup"
-    VPCZoneIdentifier: 
-      - Fn::ImportValue: !Sub "${EnvironmentName}-PRIV-NETS"
-
-
+  ApplicationAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties: 
+      VPCZoneIdentifier: 
+        - Fn::ImportValue: !Sub "${EnvironmentName}-PRIV-NETS"
+      LaunchConfigurationName: 
+        Ref: LaunchConfigForWebServer
+      MinSize: '4'
+      MaxSize: '8'
+      TargetGroupARNs: 
+        - !Ref ApplicationTargetGroup
+    
 Outputs:
   LoadBalancerDNS:
     Description: DNS for Load Balancer in order to access the applicaation servers

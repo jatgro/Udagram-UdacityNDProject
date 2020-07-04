@@ -1,8 +1,8 @@
 [
     {
-        "ParameterKey": "EnvironmentName",
-        "ParameterValue": "UdagramDeploymentProject"
-    },
+		"ParameterKey": "EnvironmentName",
+		"ParameterValue": "UdagramDeploymentProject"
+	},
     {
         "ParameterKey": "awsManagedPolicyForS3BucketFullAccess",
 		"ParameterValue": "arn:aws:iam::aws:policy/AmazonS3FullAccess"
